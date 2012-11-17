@@ -16,7 +16,13 @@ import qualified Data.Vector as V
 
 
 minSeq :: (V.Vector Sequence) -> IO Int
-minSeq ss = fromIntegral . V.minimum <$> V.mapM readSeq ss
+minSeq ss = V.foldM' go maxBound ss
+    where go maxBound s = do
+                n <- readSeq s
+                if n < maxBound
+                    then return $! n
+                    else return $! maxBound
+    --fromIntegral . V.minimum <$> V.mapM readSeq ss
 {-# INLINE minSeq #-}
 
 await :: (V.Vector Sequence) -> Int -> Int -> IO Int
