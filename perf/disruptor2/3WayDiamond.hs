@@ -26,7 +26,7 @@ main = do
     mapM_ (\(c,l) -> forkChild buf seqr c l) (zip cons dones)
 
     finalCon <- newConsumer (return . rnf)
-    forkIO $ consumeAll buf modmask (newBarrier seqr (V.fromList (map cSeq cons))) finalCon done
+    forkIO $ consumeAll buf modmask (barrierOn cons seqr) finalCon done
 
     mapM_ takeMVar dones
     takeMVar done

@@ -9,6 +9,7 @@ module Data.RingBuffer
     , newSequencer
     , newConsumer
     , newBarrier
+    , barrierOn
 
     -- * Concurrent Access, aka Disruptor API
     , claim
@@ -19,7 +20,6 @@ module Data.RingBuffer
 
     -- * Util
     , consumerSeq
-    , cSeq
     )
 where
 
@@ -120,7 +120,8 @@ consumerSeq :: Consumer a -> IO Int
 consumerSeq (Consumer _ sq) = readSeq sq
 {-# INLINE consumerSeq #-}
 
-cSeq (Consumer _ s) = s
-
+barrierOn :: [Consumer a] -> Sequencer -> Barrier
+barrierOn consumers sequencer = newBarrier sequencer (V.fromList $ map cSeq consumers)
+    where cSeq (Consumer _ s) = s
 
 -- vim: set ts=4 sw=4 et:
