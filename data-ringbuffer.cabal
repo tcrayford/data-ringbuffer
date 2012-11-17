@@ -89,6 +89,19 @@ benchmark perf-disruptor2-multicast
   hs-source-dirs:    perf/disruptor2
                    , perf
 
+benchmark perf-disruptor2-diamond3way
+  type:              exitcode-stdio-1.0
+  main-is:           3WayDiamond.hs
+  build-depends:     base >= 4 && < 5
+                   , data-ringbuffer
+                   , deepseq
+                   , time
+                   , vector
+  default-language:  Haskell2010
+  ghc-options:       -Wall -O2 -threaded -rtsopts -fno-warn-unused-do-bind
+  hs-source-dirs:    perf/disruptor2
+                   , perf
+
 benchmark perf-tchan-unicast
   type:              exitcode-stdio-1.0
   main-is:           Unicast.hs

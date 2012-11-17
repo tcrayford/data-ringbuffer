@@ -19,6 +19,7 @@ module Data.RingBuffer
 
     -- * Util
     , consumerSeq
+    , cSeq
     )
 where
 
@@ -118,6 +119,8 @@ publish s@(Sequencer sq _) i batchsize = do
 consumerSeq :: Consumer a -> IO Int
 consumerSeq (Consumer _ sq) = readSeq sq
 {-# INLINE consumerSeq #-}
+
+cSeq (Consumer _ s) = s
 
 
 -- vim: set ts=4 sw=4 et:
