@@ -11,6 +11,7 @@ import           Data.RingBuffer
 import           Data.RingBuffer.Vector
 import           Util
 import qualified Data.Vector as V
+import           GHC.Conc
 
 
 main :: IO ()
@@ -22,11 +23,11 @@ main = do
     done <- newEmptyMVar
     start <- now
 
-    forkIO $ mapM_ (pub buf seqr) [0..iterations]
-    mapM_ (\(c,l) -> forkChild buf seqr c l) (zip cons dones)
+    forkOn 2 $ mapM_ (pub buf seqr) [0..iterations]
+    mapM_ (\(c,l, resource) -> forkChild buf seqr c l resource) (zip3 cons dones [3..])
 
     finalCon <- newConsumer (return . rnf)
-    forkIO $ consumeAll buf modmask (barrierOn cons seqr) finalCon done
+    forkOn 1 $ consumeAll buf modmask (barrierOn cons seqr) finalCon done
 
     mapM_ takeMVar dones
     takeMVar done
@@ -39,7 +40,7 @@ main = do
 
         pub buf seqr i = publishTo buf modmask seqr i i
 
-        forkChild buf seqr con lock = forkIO $
+        forkChild buf seqr con lock resource = forkOn resource $
             consumeAll buf modmask (newBarrier seqr V.empty) con lock
 
         consumeAll buf modm barr con lock = do
