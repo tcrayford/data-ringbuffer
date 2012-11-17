@@ -8,6 +8,7 @@ module Data.RingBuffer.Types
 where
 
 import           Data.IORef
+import qualified Data.Vector as V
 
 
 newtype Sequence = Sequence (IORef Int)
@@ -15,13 +16,13 @@ newtype Sequence = Sequence (IORef Int)
 
 data Sequencer = Sequencer !Sequence
                            -- ^ cursor
-                           ![Sequence]
+                           !(V.Vector Sequence)
                            -- ^ gating (aka consumer) sequences
 
 data Barrier = Barrier !Sequence
                        -- ^ cursor (must point to the same sequence as the
                        -- corresponding 'Sequencer')
-                       ![Sequence]
+                       !(V.Vector Sequence)
                        -- ^ dependent sequences (optional)
 
 data Consumer a = Consumer (a -> IO ())

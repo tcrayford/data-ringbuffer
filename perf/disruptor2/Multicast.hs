@@ -10,6 +10,7 @@ import           Control.Monad          (replicateM)
 import           Data.RingBuffer
 import           Data.RingBuffer.Vector
 import           Util
+import qualified Data.Vector as V
 
 
 main :: IO ()
@@ -34,7 +35,7 @@ main = do
         pub buf seqr i = publishTo buf modmask seqr i i
 
         forkChild buf seqr con lock = forkIO $
-            consumeAll buf modmask (newBarrier seqr []) con lock
+            consumeAll buf modmask (newBarrier seqr V.empty) con lock
 
         consumeAll buf modm barr con lock = do
             consumeFrom buf modm barr con

@@ -10,6 +10,7 @@ import           Control.DeepSeq        (rnf)
 import           Data.RingBuffer
 import           Data.RingBuffer.Vector
 import           Util
+import qualified Data.Vector as V
 
 main :: IO ()
 main = do
@@ -21,7 +22,7 @@ main = do
 
     let xs = chunk 10 [0..iterations]
     forkIO $ mapM_ (pub buf seqr) xs
-    forkIO $ consumeAll buf modmask (newBarrier seqr []) con done
+    forkIO $ consumeAll buf modmask (newBarrier seqr V.empty) con done
 
     takeMVar done *> now >>= printTiming iterations start
 

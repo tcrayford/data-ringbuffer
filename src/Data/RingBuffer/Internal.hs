@@ -12,13 +12,14 @@ import           Control.Applicative  ((<$>))
 import           Data.CAS
 import           Data.IORef
 import           Data.RingBuffer.Types
+import qualified Data.Vector as V
 
 
-minSeq :: [Sequence] -> IO Int
-minSeq ss = fromIntegral . minimum <$> mapM readSeq ss
+minSeq :: (V.Vector Sequence) -> IO Int
+minSeq ss = fromIntegral . V.minimum <$> V.mapM readSeq ss
 {-# INLINE minSeq #-}
 
-await :: [Sequence] -> Int -> Int -> IO Int
+await :: (V.Vector Sequence) -> Int -> Int -> IO Int
 await gates n bufsize = do
     m <- minSeq gates
     if (n - bufsize <= m) then return n else await gates n bufsize

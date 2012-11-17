@@ -26,6 +26,7 @@ import           Control.Applicative        ((*>))
 import           Control.Concurrent         (yield)
 import           Data.RingBuffer.Internal
 import           Data.RingBuffer.Types
+import qualified Data.Vector as V
 
 
 --
@@ -36,12 +37,12 @@ newSequencer :: [Consumer a] -> IO Sequencer
 newSequencer conss = do
     curs <- mkSeq
 
-    return $! Sequencer curs (map gate conss)
+    return $! Sequencer curs $ V.fromList (map gate conss)
 
     where
         gate (Consumer _ sq) = sq
 
-newBarrier :: Sequencer -> [Sequence] -> Barrier
+newBarrier :: Sequencer -> (V.Vector Sequence) -> Barrier
 newBarrier (Sequencer curs _) = Barrier curs
 
 newConsumer :: (a -> IO ()) -> IO (Consumer a)
@@ -89,7 +90,7 @@ nextBatch sqr sq n bufsize = do
 -- | Wait for the given sequence value to be available for consumption
 waitFor :: Barrier -> Int -> IO Int
 waitFor b@(Barrier sq deps) i = do
-    avail <- if null deps then readSeq sq else minSeq deps
+    avail <- if V.null deps then readSeq sq else minSeq deps
 
     --print $ "avail " ++ show avail
 
