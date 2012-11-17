@@ -2,3 +2,5 @@ dist
 *.swp
 cabal-dev
 perf-disruptor2-multicast.prof
+*.o
+*.hi
