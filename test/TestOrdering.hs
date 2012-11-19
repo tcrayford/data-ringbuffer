@@ -1,4 +1,6 @@
 import           Test.Hspec.Monadic
+import           Test.Hspec.HUnit()
+import           Test.HUnit
 import           Test.Hspec.QuickCheck(prop)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
@@ -10,6 +12,7 @@ import qualified Data.Vector as V
 import           Control.DeepSeq        (rnf)
 import           Control.Monad
 import           Debug.Trace
+import qualified Data.Vector.Mutable  as MV
 
 {-
 main :: IO ()
@@ -18,7 +21,13 @@ main = hspec $ do
     prop "it delivers in order" prop_unicast_delivers_in_order
 -}
 
-main = go 10
+main = hspec $ describe "mapMV" $ do
+  it "loops over a mutable vector" $ do
+    x <- newMVar []
+    mvector <- MV.replicate 5 0
+    mapMV_ (\n -> modifyMVar_ x (return . (n:))) mvector
+    res <- takeMVar x
+    [0,0,0,0,0] @?= res
 
 prop_unicast_delivers_in_order :: (Positive Int) -> Property
 prop_unicast_delivers_in_order (Positive iterations) = monadicIO $ run $ go iterations

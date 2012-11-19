@@ -42,6 +42,7 @@ test-suite main-test
                    , vector
                    , hspec
                    , QuickCheck
+                   , HUnit
   default-language:  Haskell2010
   ghc-options:       -Wall -O2 -threaded -rtsopts -fno-warn-unused-do-bind
   hs-source-dirs:    perf/disruptor2
