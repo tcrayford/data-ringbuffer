@@ -20,6 +20,7 @@ module Data.RingBuffer
 
     -- * Util
     , consumerSeq
+    , mkSeq
     )
 where
 
