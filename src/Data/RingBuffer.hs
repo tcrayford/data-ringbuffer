@@ -20,6 +20,7 @@ module Data.RingBuffer
 
     -- * Util
     , consumerSeq
+    , getCursorValue
     , mkSeq
     )
 where
@@ -116,6 +117,10 @@ publish s@(Sequencer sq _) i batchsize = do
 --
 -- Util
 --
+
+getCursorValue :: Sequencer -> IO Int
+getCursorValue (Sequencer sq _) = readSeq sq
+{-# INLINE getCursorValue #-}
 
 consumerSeq :: Consumer a -> IO Int
 consumerSeq (Consumer _ sq) = readSeq sq

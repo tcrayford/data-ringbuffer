@@ -1,5 +1,6 @@
 module Main where
 
+import           Control.Monad          (when)
 import           Control.Applicative    ((*>))
 import           Control.Concurrent     ( newEmptyMVar
                                         , putMVar
@@ -10,12 +11,14 @@ import           Control.DeepSeq        (rnf)
 import           Data.RingBuffer
 import           Data.RingBuffer.Vector
 import           Util
+import           Data.IORef
 import qualified Data.Vector as V
 
 
 main :: IO ()
 main = do
-    con   <- newConsumer (return . rnf)
+    res   <- newIORef 0
+    con   <- newConsumer (\x -> atomicModifyIORef' res (\n -> (n + 1, ())))
     seqr  <- newSequencer [con]
     buf   <- newRingBuffer bufferSize 0
     done  <- newEmptyMVar
@@ -25,6 +28,8 @@ main = do
     forkIO $ consumeAll buf modmask (newBarrier seqr V.empty) con done
 
     takeMVar done *> now >>= printTiming iterations start
+    x <- readIORef res
+    when (x /= iterations) $ error $ "x was not expected total, got: " ++ show x ++ ", expected: " ++ show iterations
 
     where
         bufferSize = 1024*8
@@ -35,9 +40,15 @@ main = do
         consumeAll buf modm barr con lock = do
             consumeFrom buf modm barr con
             consumed <- consumerSeq con
-            if consumed == iterations
+            if consumed >= iterations
                 then putMVar lock ()
                 else consumeAll buf modm barr con lock
 
+atomicModifyIORef' :: IORef a -> (a -> (a,b)) -> IO b
+atomicModifyIORef' ref f = do
+    b <- atomicModifyIORef ref
+            (\x -> let (a, b) = f x
+                    in (a, a `seq` b))
+    b `seq` return b
 
 -- vim: set ts=4 sw=4 et:

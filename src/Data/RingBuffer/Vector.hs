@@ -6,6 +6,7 @@ module Data.RingBuffer.Vector
     , batchPublishTo
     , concPublishTo
     , concBatchPublishTo
+    , mapMV_
     )
 where
 
@@ -78,6 +79,7 @@ mapMV_ fn mvec = do
           runFn n = do
                      MV.unsafeRead mvec n >>= fn
                      go $! n + 1
+{-# INLINE mapMV_ #-}
 
 publishTo :: MVector a -> Int -> Sequencer -> Int -> a -> IO ()
 publishTo (MVector mvec) modm seqr i v = do
