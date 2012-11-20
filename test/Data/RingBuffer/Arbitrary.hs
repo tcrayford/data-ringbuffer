@@ -17,6 +17,6 @@ newtype BufferSize = BufferSize Int deriving (Show, Eq)
 
 instance Arbitrary BufferSize where
     arbitrary = do
-        n <- (choose (1,20)) :: Gen Int
+        n <- choose (1,20) :: Gen Int
         return $! BufferSize (2 ^ (n + 1))
 
