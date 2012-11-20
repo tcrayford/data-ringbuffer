@@ -9,6 +9,7 @@ import           Data.RingBuffer.Vector
 import qualified Data.Vector as V
 import           Control.DeepSeq        (rnf)
 import           Control.Monad
+import           Data.RingBuffer.Arbitrary
 import qualified Data.Vector.Mutable  as MV
 import qualified Data.Vector as V
 import System.Timeout
@@ -29,25 +30,6 @@ prop_loops_over_mutable_vector xs = monadicIO $ do
         then error $ "expected " ++ show xs ++ " to equal " ++ show res
         else return ()
     assert $ xs == res
-
-newtype IterationCount = IterationCount Int deriving (Show, Eq)
-
-instance Arbitrary IterationCount where
-    arbitrary = fmap IterationCount $ choose (1, 70)
-    shrink (IterationCount i) = fmap IterationCount (shrink i)
-
-newtype ThreadSleep = ThreadSleep Int deriving (Show, Eq)
-
-instance Arbitrary ThreadSleep where
-    arbitrary = fmap ThreadSleep $ choose (0, 10)
-    shrink (ThreadSleep n) = fmap ThreadSleep $ shrink n
-
-newtype BufferSize = BufferSize Int deriving (Show, Eq)
-
-instance Arbitrary BufferSize where
-    arbitrary = do
-        n <- (choose (1,20)) :: Gen Int
-        return $! BufferSize (2 ^ (n + 1))
 
 prop_producer_never_overtakes_consumer :: IterationCount -> ThreadSleep -> ThreadSleep -> BufferSize -> Property
 prop_producer_never_overtakes_consumer (IterationCount iterations) (ThreadSleep pdelay) (ThreadSleep cdelay) (BufferSize bufferSize) = monadicIO $ run $ do
@@ -95,11 +77,7 @@ while test action = do
                 while test action
 
 prop_unicast_delivers_in_order :: IterationCount -> ThreadSleep -> ThreadSleep -> BufferSize -> Property
-prop_unicast_delivers_in_order (IterationCount iterations) (ThreadSleep p) (ThreadSleep c) (BufferSize n) = monadicIO $ do
-    run $ go iterations p c n
-    assert $ True
-
-go iterations pubDelay conDelay bufferSize = do
+prop_unicast_delivers_in_order (IterationCount iterations) (ThreadSleep pubDelay) (ThreadSleep conDelay) (BufferSize bufferSize) = monadicIO $ run $ do
     let xs = [0..iterations]
     done  <- newEmptyMVar
     res   <- newMVar []
@@ -137,3 +115,4 @@ go iterations pubDelay conDelay bufferSize = do
                 else consumeAll buf modm barr con lock res
 
 -- vim: set ts=4 sw=4 et:
+
