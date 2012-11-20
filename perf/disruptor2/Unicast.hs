@@ -29,7 +29,7 @@ main = do
 
     takeMVar done *> now >>= printTiming iterations start
     x <- readIORef res
-    when (x /= iterations) $ error $ "x was not expected total, got: " ++ show x ++ ", expected: " ++ show iterations
+    when (x /= length [0..iterations]) $ error $ "x was not expected total, got: " ++ show x ++ ", expected: " ++ show iterations
 
     where
         bufferSize = 1024*8
