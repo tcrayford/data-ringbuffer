@@ -13,6 +13,7 @@ import           Data.CAS
 import           Data.IORef
 import           Data.RingBuffer.Types
 import qualified Data.Vector as V
+import           Debug.Trace
 
 
 minSeq :: (V.Vector Sequence) -> IO Int
@@ -33,7 +34,8 @@ await gates n bufsize = do
 
 
 addAndGet :: Sequence -> Int -> IO Int
-addAndGet (Sequence ref) delta = atomicModifyIORefCAS ref $! pair . (+delta)
+addAndGet (Sequence ref) delta = do
+    atomicModifyIORefCAS ref $! pair . (+delta)
 
     where
         pair x = (x, x)

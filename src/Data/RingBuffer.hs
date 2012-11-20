@@ -30,6 +30,7 @@ import           Control.Concurrent         (yield)
 import           Data.RingBuffer.Internal
 import           Data.RingBuffer.Types
 import qualified Data.Vector as V
+import           Debug.Trace
 
 
 --
@@ -107,7 +108,7 @@ publish s@(Sequencer sq _) i batchsize = do
     let expected = i - batchsize
     curr <- readSeq sq
 
-    --print $ "expected " ++ show expected ++ ", curr " ++ show curr
+    --trace ("publish: expected " ++ show expected ++ ", curr " ++ show curr) $ return ()
 
     if expected == curr
         then writeSeq sq i

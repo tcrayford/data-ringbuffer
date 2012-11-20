@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Data.RingBuffer.Vector
     ( MVector(..)
     , newRingBuffer
@@ -19,6 +20,8 @@ import           Data.RingBuffer
 import qualified Data.RingBuffer.Class      as C
 import           Data.RingBuffer.Internal
 import           Data.RingBuffer.Types
+import           Debug.Trace
+import           Unsafe.Coerce
 
 
 newtype MVector a = MVector (MV.IOVector a)
@@ -61,20 +64,34 @@ consumeFrom (MVector mvec) modm barr (Consumer fn sq) = do
 
             let start = next .&. modm
                 len   = avail - next
-                (_,t) = MV.splitAt start mvec
+                t = MV.take (len + 1) $ MV.drop start mvec
+
+            cTrace "CONSUMEFROM ==============" $ return ()
+            cTrace ("avail: " ++ show avail) $ return ()
+            cTrace ("next: " ++ show next) $ return ()
+            cTrace ("start: " ++ show start) $ return ()
+            cTrace ("len: " ++ show len) $ return ()
+            cTrace ("t.len: " ++ show (MV.length t)) $ return ()
+            (s :: [Int]) <- fmap (unsafeCoerce . V.toList) (V.freeze t)
+            cTrace ("t:" ++ show s) $ return ()
 
             mapMV_ fn t
-            unless (MV.length t >= len) $ do
-                let remaining = (MV.take (len - MV.length t) mvec)
+            unless (MV.length t > len) $ do
+                let remaining = (MV.take (1 + (len - MV.length t)) mvec)
+                cTrace ("taking from the start with length: " ++ show ((len - MV.length t + 1))) $ return ()
+
+                (s1 :: [Int]) <- fmap (unsafeCoerce . V.toList) (V.freeze remaining)
+                cTrace ("remaining: " ++ show s1) $ return ()
                 mapMV_ fn remaining
 
             writeSeq sq avail
 {-# INLINE consumeFrom #-}
 
+
 mapMV_ fn mvec = do
     go 0
     return ()
-    where go n = if n == max then return () else runFn n
+    where go n = if n == max then do return () else runFn n
           max = MV.length mvec
           runFn n = do
                      MV.unsafeRead mvec n >>= fn
@@ -87,6 +104,10 @@ publishTo (MVector mvec) modm seqr i v = do
     MV.unsafeWrite mvec (next .&. modm) v
     publish seqr next 1
 {-# INLINE publishTo #-}
+
+pTrace s = return ()
+cTrace s a = a
+    --trace ("                                                 " ++ s) a
 
 batchPublishTo :: MVector a -> Int -> Sequencer -> Int -> [a] -> IO ()
 batchPublishTo (MVector mvec) modm seqr i vs = do
