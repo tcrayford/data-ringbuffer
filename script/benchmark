@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+cabal build
+
+echo "unicast batch"
+dist/build/perf-disruptor2-unicast-batch/perf-disruptor2-unicast-batch +RTS -N4
+echo "unicast"
+dist/build/perf-disruptor2-unicast/perf-disruptor2-unicast +RTS -N4
+echo "diamond3way"
+dist/build/perf-disruptor2-diamond3way/perf-disruptor2-diamond3way +RTS -N4
+echo "multicast"
+dist/build/perf-disruptor2-multicast/perf-disruptor2-multicast +RTS -N4
+echo "two producer one consumer"
+dist/build/perf-disruptor2-two-producer-one-consumer/perf-disruptor2-two-producer-one-consumer +RTS -N4
