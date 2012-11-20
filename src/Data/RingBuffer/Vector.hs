@@ -105,7 +105,6 @@ publishTo (MVector mvec) modm seqr i v = do
     publish seqr next 1
 {-# INLINE publishTo #-}
 
-pTrace s = return ()
 cTrace s a = a
     --trace ("                                                 " ++ s) a
 

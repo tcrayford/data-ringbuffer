@@ -9,19 +9,13 @@ import           Data.RingBuffer.Vector
 import qualified Data.Vector as V
 import           Control.DeepSeq        (rnf)
 import           Control.Monad
-import           Debug.Trace
 import qualified Data.Vector.Mutable  as MV
 import qualified Data.Vector as V
 import System.Timeout
 
-{-
 main :: IO ()
-main = hspec $ do
-  describe "unicast disruptor" $
--}
-
 main = hspec $ describe "mapMV" $ do
-    --prop "loops over a mutable vector" $ prop_loops_over_mutable_vector
+    prop "loops over a mutable vector" $ prop_loops_over_mutable_vector
     prop "it delivers in order" prop_unicast_delivers_in_order
     prop "producer sequence never overtakes consumer" prop_producer_never_overtakes_consumer
 
@@ -45,7 +39,7 @@ instance Arbitrary IterationCount where
 newtype ThreadSleep = ThreadSleep Int deriving (Show, Eq)
 
 instance Arbitrary ThreadSleep where
-    arbitrary = fmap ThreadSleep $ choose (0, 1000)
+    arbitrary = fmap ThreadSleep $ choose (0, 10)
     shrink (ThreadSleep n) = fmap ThreadSleep $ shrink n
 
 newtype BufferSize = BufferSize Int deriving (Show, Eq)
@@ -54,8 +48,6 @@ instance Arbitrary BufferSize where
     arbitrary = do
         n <- (choose (1,20)) :: Gen Int
         return $! BufferSize (2 ^ (n + 1))
-    --shrink (BufferSize n) = fmap (BufferSize . (2^) . (1+)) (shrink st)
-        --where st = (round $ logBase 2 (realToFrac n)) :: Int
 
 prop_producer_never_overtakes_consumer :: IterationCount -> ThreadSleep -> ThreadSleep -> BufferSize -> Property
 prop_producer_never_overtakes_consumer (IterationCount iterations) (ThreadSleep pdelay) (ThreadSleep cdelay) (BufferSize bufferSize) = monadicIO $ run $ do
@@ -98,9 +90,7 @@ checkConsumerSequence seqr con bufferSize = do
 while :: IO Bool -> IO () -> IO ()
 while test action = do
     x <- test
-    if (not x)
-        then return ()
-        else do
+    when x $ do
                 action
                 while test action
 
@@ -110,7 +100,6 @@ prop_unicast_delivers_in_order (IterationCount iterations) (ThreadSleep p) (Thre
     assert $ True
 
 go iterations pubDelay conDelay bufferSize = do
-    trace "GOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO" $ return ()
     let xs = [0..iterations]
     done  <- newEmptyMVar
     res   <- newMVar []
@@ -137,7 +126,7 @@ go iterations pubDelay conDelay bufferSize = do
 
         myConsumer res lock x = do
                                 threadDelay conDelay
-                                modifyMVar_ res (appendForTrace x)
+                                modifyMVar_ res (return . (++ [x]))
 
         consumeAll buf modm barr con lock res = do
             consumeFrom buf modm barr con
@@ -146,9 +135,5 @@ go iterations pubDelay conDelay bufferSize = do
                 then do
                         putMVar lock ()
                 else consumeAll buf modm barr con lock res
-
-appendForTrace :: Int -> [Int] -> IO [Int]
-appendForTrace x xs = do
-  return $! xs ++ [x]
 
 -- vim: set ts=4 sw=4 et:

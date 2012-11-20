@@ -13,7 +13,6 @@ import           Data.CAS
 import           Data.IORef
 import           Data.RingBuffer.Types
 import qualified Data.Vector as V
-import           Debug.Trace
 
 
 minSeq :: (V.Vector Sequence) -> IO Int
@@ -23,13 +22,13 @@ minSeq ss = V.foldM' go maxBound ss
                 if n < maxBound
                     then return $! n
                     else return $! maxBound
-    --fromIntegral . V.minimum <$> V.mapM readSeq ss
+--fromIntegral . V.minimum <$> V.mapM readSeq ss
 {-# INLINE minSeq #-}
 
 await :: (V.Vector Sequence) -> Int -> Int -> IO Int
 await gates n bufsize = do
     m <- minSeq gates
-    if (n - bufsize <= m) then return n else await gates n bufsize
+    if (n - bufsize < m) then return n else await gates n bufsize
 {-# INLINE await #-}
 
 
