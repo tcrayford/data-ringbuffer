@@ -1,4 +1,4 @@
-import           Test.Hspec.Monadic
+import           Test.Hspec
 import           Test.Hspec.QuickCheck(prop)
 import           Test.QuickCheck
 import           Test.QuickCheck.Monadic
@@ -6,13 +6,10 @@ import           Control.Concurrent(forkIO, threadDelay)
 import           Control.Concurrent.MVar.Strict
 import           Data.RingBuffer
 import           Data.RingBuffer.Vector
-import qualified Data.Vector as V
 import           Control.DeepSeq        (rnf)
 import           Control.Monad
 import           Data.RingBuffer.Arbitrary
-import qualified Data.Vector.Mutable  as MV
 import qualified Data.Vector as V
-import System.Timeout
 
 main :: IO ()
 main = hspec $ describe "mapMV" $ do
@@ -81,7 +78,7 @@ prop_unicast_delivers_in_order (IterationCount iterations) (ThreadSleep pubDelay
     let xs = [0..iterations]
     done  <- newEmptyMVar
     res   <- newMVar []
-    con   <- newConsumer (myConsumer res done)
+    con   <- newConsumer (myConsumer res)
     seqr  <- newSequencer [con]
     buf   <- newRingBuffer bufferSize 0
 
@@ -102,7 +99,7 @@ prop_unicast_delivers_in_order (IterationCount iterations) (ThreadSleep pubDelay
                                 threadDelay pubDelay
                                 publishTo buf modmask seqr i i
 
-        myConsumer res lock x = do
+        myConsumer res x = do
                                 threadDelay conDelay
                                 modifyMVar_ res (return . (++ [x]))
 
