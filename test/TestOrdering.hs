@@ -13,7 +13,8 @@ import qualified Data.Vector as V
 
 main :: IO ()
 main = hspec $ describe "the disruptor" $ do
-    prop "it delivers in order" prop_unicast_delivers_in_order
+    prop "unicast delivers in order" prop_unicast_delivers_in_order
+    prop "multicast delivers in order to each consumer" prop_multicast_delivers_in_order
     prop "producer sequence never overtakes consumer" prop_producer_never_overtakes_consumer
 
 prop_producer_never_overtakes_consumer :: IterationCount -> ThreadSleep -> ThreadSleep -> BufferSize -> Property
@@ -59,6 +60,50 @@ while test action = do
     when x $ do
                 action
                 while test action
+
+prop_multicast_delivers_in_order :: IterationCount -> ThreadSleep -> ThreadSleep -> ConsumerCount -> BufferSize -> Property
+prop_multicast_delivers_in_order (IterationCount iterations) (ThreadSleep pubDelay) (ThreadSleep conDelay) (ConsumerCount consumerCount) (BufferSize bufferSize) = monadicIO $ run $ do
+    results <- replicateM consumerCount (newMVar [])
+    cons  <- mapM (\res -> newConsumer (myConsumer res)) results
+
+    seqr  <- newSequencer cons
+    buf   <- newRingBuffer bufferSize 0
+    dones <- replicateM consumerCount newEmptyMVar
+
+    forkIO $ mapM_ (pub buf seqr) xs
+    mapM_ (\(c,l) -> forkChild buf seqr c l) (zip cons dones)
+
+    mapM_ takeMVar dones
+
+    mapM_ checkResults results
+
+    where
+        xs = [0..iterations]
+        modmask    = bufferSize - 1
+
+        checkResults m = do
+                        final <- takeMVar m
+                        unless (final == xs) $ do
+                            let diff = filter (uncurry (/=)) (zip final xs)
+                            error $ "final was: " ++ show final ++ " xs was: " ++ show xs ++ " diff: " ++ show diff
+
+        pub buf seqr i = do
+                             threadDelay pubDelay
+                             publishTo buf modmask seqr i i
+
+        forkChild buf seqr con lock = forkIO $
+            consumeAll buf modmask (newBarrier seqr V.empty) con lock
+
+        myConsumer res x = do
+                                threadDelay conDelay
+                                modifyMVar_ res (return . (++ [x]))
+
+        consumeAll buf modm barr con lock = do
+            consumeFrom buf modm barr con
+            consumed <- consumerSeq con
+            if consumed == iterations
+                then putMVar lock ()
+                else consumeAll buf modm barr con lock
 
 prop_unicast_delivers_in_order :: IterationCount -> ThreadSleep -> ThreadSleep -> BufferSize -> Property
 prop_unicast_delivers_in_order (IterationCount iterations) (ThreadSleep pubDelay) (ThreadSleep conDelay) (BufferSize bufferSize) = monadicIO $ run $ do
