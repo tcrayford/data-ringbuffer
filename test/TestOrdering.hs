@@ -12,20 +12,9 @@ import           Data.RingBuffer.Arbitrary
 import qualified Data.Vector as V
 
 main :: IO ()
-main = hspec $ describe "mapMV" $ do
-    prop "loops over a mutable vector" prop_loops_over_mutable_vector
+main = hspec $ describe "the disruptor" $ do
     prop "it delivers in order" prop_unicast_delivers_in_order
     prop "producer sequence never overtakes consumer" prop_producer_never_overtakes_consumer
-
-prop_loops_over_mutable_vector :: [Int] -> Property
-prop_loops_over_mutable_vector xs = monadicIO $ do
-    x <- run $ newMVar []
-    mvector <- run $ V.thaw (V.fromList xs)
-    run $ mapMV_ (\n -> modifyMVar_ x (return . (++ [n]))) mvector
-    res <- run $ takeMVar x
-    when (xs /= res) $
-        error ("expected " ++ show xs ++ " to equal " ++ show res)
-    assert $ xs == res
 
 prop_producer_never_overtakes_consumer :: IterationCount -> ThreadSleep -> ThreadSleep -> BufferSize -> Property
 prop_producer_never_overtakes_consumer (IterationCount iterations) (ThreadSleep pdelay) (ThreadSleep cdelay) (BufferSize bufferSize) = monadicIO $ run $ do

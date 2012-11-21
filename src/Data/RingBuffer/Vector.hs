@@ -7,7 +7,6 @@ module Data.RingBuffer.Vector
     , batchPublishTo
     , concPublishTo
     , concBatchPublishTo
-    , mapMV_
     )
 where
 
@@ -20,6 +19,8 @@ import           Data.RingBuffer
 import qualified Data.RingBuffer.Class      as C
 import           Data.RingBuffer.Internal
 import           Data.RingBuffer.Types
+import qualified Data.Vector.Fusion.Stream.Monadic as S
+import           Data.Vector.Generic.Mutable       (mstream)
 
 newtype MVector a = MVector (MV.IOVector a)
 
@@ -62,23 +63,13 @@ consumeFrom (MVector mvec) modm barr (Consumer fn sq) = do
                 len   = avail - next
                 t = MV.take (len + 1) $ MV.drop start mvec
 
-            mapMV_ fn t
+            S.mapM_ fn $ mstream t
             unless (MV.length t > len) $ do
                 let remaining = (MV.take (1 + (len - MV.length t)) mvec)
-                mapMV_ fn remaining
+                S.mapM_ fn $ mstream remaining
 
             writeSeq sq avail
 {-# INLINE consumeFrom #-}
-
-mapMV_ fn mvec = do
-    go 0
-    return ()
-    where go n = if n == max then do return () else runFn n
-          max = MV.length mvec
-          runFn n = do
-                     MV.unsafeRead mvec n >>= fn
-                     go $! n + 1
-{-# INLINE mapMV_ #-}
 
 publishTo :: MVector a -> Int -> Sequencer -> Int -> a -> IO ()
 publishTo (MVector mvec) modm seqr i v = do
